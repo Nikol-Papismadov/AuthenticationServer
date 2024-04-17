@@ -13,6 +13,17 @@ namespace AuthenticationServer.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigin",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:5173")
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                    });
+            });
+
             builder.Services.AddDbContext<AuthenticationDbContext>(option =>
                option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultDb")));
             builder.Services.AddTransient<IAppUserRepository, AppUserRepository>();
@@ -30,16 +41,16 @@ namespace AuthenticationServer.Api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowSpecificOrigin",
-                    builder =>
-                    {
-                        builder.WithOrigins("http://localhost:5173/")
-                               .AllowAnyHeader()
-                               .AllowAnyMethod();
-                    });
-            });
+            //builder.Services.AddCors(options =>
+            //{
+            //    options.AddPolicy("AllowSpecificOrigin",
+            //        builder =>
+            //        {
+            //            builder.WithOrigins("http://localhost:5173")
+            //                   .AllowAnyHeader()
+            //                   .AllowAnyMethod();
+            //        });
+            //});
 
             var app = builder.Build();
 
@@ -50,11 +61,11 @@ namespace AuthenticationServer.Api
                 app.UseSwaggerUI();
             }
 
-            //app.UseHttpsRedirection();
-
-            app.UseAuthorization();
             app.UseCors("AllowSpecificOrigin");
             app.UseAuthentication();
+            //app.UseHttpsRedirection();
+            app.UseAuthorization();
+           // app.UseAuthentication();
             app.MapControllers();
 
             app.Run();

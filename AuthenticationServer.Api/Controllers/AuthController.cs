@@ -1,10 +1,12 @@
 ﻿using AuthenticationServer.Api.Models;
 using AuthenticationServer.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthenticationServer.Api.Controllers
 {
+    [EnableCors("AllowSpecificOrigin")]
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController(IAuthenticationService service) : ControllerBase
