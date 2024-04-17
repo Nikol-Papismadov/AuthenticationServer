@@ -7,7 +7,7 @@ namespace AuthenticationServer.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class Authontroller(IAuthenticationService service) : ControllerBase
+    public class AuthController(IAuthenticationService service) : ControllerBase
     {
         [HttpPost]
         [Route("register")]

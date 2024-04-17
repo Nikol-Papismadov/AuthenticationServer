@@ -30,6 +30,17 @@ namespace AuthenticationServer.Api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigin",
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:5173/")
+                               .AllowAnyHeader()
+                               .AllowAnyMethod();
+                    });
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -42,8 +53,8 @@ namespace AuthenticationServer.Api
             //app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
-
+            app.UseCors("AllowSpecificOrigin");
+            app.UseAuthentication();
             app.MapControllers();
 
             app.Run();
