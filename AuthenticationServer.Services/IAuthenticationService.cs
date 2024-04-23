@@ -8,6 +8,8 @@ namespace AuthenticationServer.Services;
 
 public interface IAuthenticationService
 {
-    Task<string> Login(string username, string password);
+    Task<(string accessToken, string refreshToken)> Login(string username, string password);
     Task Register(string username, string password);
+    Task<string> RefreshToken(string username, string refreshToken);
+    Task Logout(string username);
 }
