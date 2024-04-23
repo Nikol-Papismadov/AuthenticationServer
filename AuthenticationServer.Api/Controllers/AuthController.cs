@@ -46,6 +46,38 @@ namespace AuthenticationServer.Api.Controllers
                 return Problem("LOGIN FAILED");
             }
         }
+        [HttpPost]
+        [Route("refreshToken")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+            try
+            {
+                var token = await service.RefreshToken(request.Username, request.RefreshToken);
+                return Ok(token);
+            }
+            catch(Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+        [HttpPost]
+        [Route("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+            try
+            {
+                await service.Logout(request.Username);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
     }
 
 }

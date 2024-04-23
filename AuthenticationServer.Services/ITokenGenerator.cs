@@ -9,6 +9,8 @@ namespace AuthenticationServer.Services
 {
     public interface ITokenGenerator
     {
-        string GenerateToken(AppUser user);
+        string GenerateAccessToken(AppUser user);
+        string GenerateRefreshToken(AppUser user);
+        string GenerateToken(AppUser user, string secret, double expiration);
     }
 }

@@ -6,6 +6,7 @@ namespace AuthenticationServer.Services;
 
 public class AuthenticationService(IAppUserRepository repository, IPasswordHasher hasher, ITokenGenerator tokenGenerator) : IAuthenticationService
 {
+    private KeyValuePair<string, string> userToken { get; set; } = new();
     public async Task<string> Login(string username, string password)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
@@ -19,7 +20,8 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
         {
             throw new InvalidOperationException("Wrong password");
         }
-        return tokenGenerator.GenerateToken(user);
+        userToken = new KeyValuePair<string, string>(user.UserName, tokenGenerator.GenerateRefreshToken(user));
+        return tokenGenerator.GenerateAccessToken(user);
     }
 
     public async Task Register(string username, string password)
@@ -45,6 +47,37 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
             throw new InvalidOperationException("database error", ex);
         }
 
+    }
+
+    public async Task<string> RefreshToken(string username, string refreshToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(username);
+        ArgumentException.ThrowIfNullOrEmpty(refreshToken);
+        if ((await repository.UserExists(username)) == false)
+        {
+            throw new InvalidOperationException("User not found");
+        }
+        var user = await repository.GetByUserName(username);
+        if (user.UserName != userToken.Key && refreshToken != userToken.Value)
+        {
+            throw new InvalidOperationException("Invalid refresh token");
+        }
+        return tokenGenerator.GenerateAccessToken(user);
+    }
+
+    public async Task Logout(string username)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(username);
+        if ((await repository.UserExists(username)) == false)
+        {
+            throw new InvalidOperationException("User not found");
+        }
+        var user = await repository.GetByUserName(username);
+        if (user.UserName != userToken.Key)
+        {
+            throw new InvalidOperationException("Logout failed");
+        }
+        userToken = new KeyValuePair<string, string>();
     }
 }
 

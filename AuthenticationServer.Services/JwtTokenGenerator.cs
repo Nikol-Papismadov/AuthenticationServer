@@ -14,18 +14,30 @@ namespace AuthenticationServer.Services
 {
     public class JwtTokenGenerator(AuthenticationConfiguration configuration) : ITokenGenerator
     {
-        public string GenerateToken(AppUser user)
+        public string GenerateAccessToken(AppUser user)
         {
-            var Key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.AccessTokenSecret));
+            return GenerateToken(user, configuration.AccessTokenSecret, configuration.AccessTokenExpirationMinutes);
+        }
+
+        public string GenerateRefreshToken(AppUser user)
+        {
+            return GenerateToken(user, configuration.RefreshTokenSecret, configuration.RefreshTokenExpirationMinutes);
+        }
+
+        public string GenerateToken(AppUser user, string secret, double expiration)
+        {
+            var Key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var credentials = new SigningCredentials(Key, SecurityAlgorithms.HmacSha256);
             var claims = new Claim[] { new Claim(ClaimTypes.Name, user.UserName) };
-            var utcExperation = DateTime.UtcNow.AddMinutes(configuration.AccessTokenExpirationMinutes);
+            var utcExperation = DateTime.UtcNow.AddMinutes(expiration);
             var token = new JwtSecurityToken(
                 issuer: configuration.Issuer,
                 audience: configuration.Audience,
-                claims: claims, expires: utcExperation,
+                claims: claims,
+                expires: utcExperation,
                 signingCredentials: credentials);
             return new JwtSecurityTokenHandler().WriteToken(token);
+
         }
     }
 }
