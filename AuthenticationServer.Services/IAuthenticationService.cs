@@ -10,6 +10,7 @@ public interface IAuthenticationService
 {
     Task<(string accessToken, string refreshToken)> Login(string username, string password);
     Task Register(string username, string password);
+    Task<bool> ValidateToken(string token);
     Task<string> RefreshToken(string username, string refreshToken);
     Task Logout(string username);
 }

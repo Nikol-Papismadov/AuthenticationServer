@@ -1,8 +1,14 @@
-﻿namespace AuthenticationServer.Api.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AuthenticationServer.Api.Models
 {
     public class RefreshTokenRequest
     {
+        [Required]
         public string Username { get; set; } = null!;
+
+        [Required]
         public string RefreshToken { get; set; } = null!;
+        public string OnlineUsers { get; set; } = null!;
     }
 }

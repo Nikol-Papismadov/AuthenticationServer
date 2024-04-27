@@ -3,6 +3,7 @@ using AuthenticationServer.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AuthenticationServer.Api.Controllers
 {
@@ -22,13 +23,14 @@ namespace AuthenticationServer.Api.Controllers
             try
             {
                 await service.Register(request.UserName, request.Password);
-                return RedirectToAction("Login");
+                return Ok();
             }
             catch (Exception ex)
             {
                 return Problem(ex.Message);
             }
         }
+
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -46,6 +48,7 @@ namespace AuthenticationServer.Api.Controllers
                 return Problem("LOGIN FAILED");
             }
         }
+
         [HttpPost]
         [Route("refreshToken")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -62,6 +65,24 @@ namespace AuthenticationServer.Api.Controllers
                 return Problem(ex.Message);
             }
         }
+
+        [HttpPost]
+        [Route("validateToken")]
+        public async Task<IActionResult> ValidateToken([FromBody] ValidateTokenRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+            try
+            {
+                var isValid = await service.ValidateToken(request.Token);
+                return Ok(isValid);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
         [HttpPost]
         [Route("logout")]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request)

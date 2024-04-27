@@ -1,12 +1,20 @@
 ﻿using AuthenticationServer.Data.Exceptions;
 using AuthenticationServer.Data.Repositories;
+using AuthenticationServer.Models;
 using AuthenticationServer.Models.Entities;
+using Azure.Core;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Unicode;
 
 namespace AuthenticationServer.Services;
 
-public class AuthenticationService(IAppUserRepository repository, IPasswordHasher hasher, ITokenGenerator tokenGenerator) : IAuthenticationService
+public class AuthenticationService(IAppUserRepository repository, IPasswordHasher hasher, ITokenGenerator tokenGenerator, AuthenticationConfiguration configuration) : IAuthenticationService
 {
-    private KeyValuePair<string?, string?> userToken { get; set; } = new();
     public async Task<(string accessToken, string refreshToken)> Login(string username, string password)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
@@ -20,7 +28,6 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
         }
 
         var refreshToken = tokenGenerator.GenerateRefreshToken(user);
-        storeRefreshToken(username, refreshToken);
 
         return (tokenGenerator.GenerateAccessToken(user), refreshToken);
     }
@@ -34,11 +41,7 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
         return await repository.GetByUserName(username);
     }
 
-    private void storeRefreshToken(string? username = null, string? refreshToken = null)
-    {
-        userToken = new KeyValuePair<string?, string?>(username, refreshToken);
-    }
-
+    
     public async Task Register(string username, string password)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
@@ -63,7 +66,28 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
         }
 
     }
-
+    public async Task<bool> ValidateToken(string accessToken)
+    {
+        var validationParameters = new TokenValidationParameters()
+        {
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.AccessTokenSecret)),
+            ValidIssuer = configuration.Issuer,
+            ValidAudience = configuration.Audience,
+            ValidateIssuerSigningKey = true,
+            ValidateAudience = true,
+            ValidateIssuer = true,
+            ClockSkew = TimeSpan.Zero
+        };
+        try
+        {
+            var principles = await new JwtSecurityTokenHandler().ValidateTokenAsync(accessToken, validationParameters);
+            return principles.IsValid;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     public async Task<string> RefreshToken(string username, string refreshToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
@@ -71,25 +95,25 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
 
         AppUser user = await GetUser(repository, username);
 
-        if (refreshToken != userToken.Value)
-        {
-            throw new InvalidOperationException("Invalid refresh token");
-        }
+        //onlineUsers.ToList().FirstOrDefault(u => u);
+        //if (refreshToken != userToken.Value)
+        //{
+        //    throw new InvalidOperationException("Invalid refresh token");
+        //}
 
         return tokenGenerator.GenerateAccessToken(user);
     }
-
+    
     public async Task Logout(string username)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
 
         AppUser user = await GetUser(repository, username);
 
-        if (user.UserName != userToken.Key)
-        {
-            throw new InvalidOperationException("Logout failed");
-        }
-        storeRefreshToken();
+        //if (user.UserName != userToken.Key)
+        //{
+        //    throw new InvalidOperationException("Logout failed");
+        //}
     }
 }
 
