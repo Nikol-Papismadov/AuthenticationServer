@@ -3,6 +3,7 @@ using AuthenticationServer.Data.Repositories;
 using AuthenticationServer.Models;
 using AuthenticationServer.Models.Entities;
 using Azure.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Sockets;
@@ -15,6 +16,7 @@ namespace AuthenticationServer.Services;
 
 public class AuthenticationService(IAppUserRepository repository, IPasswordHasher hasher, ITokenGenerator tokenGenerator, AuthenticationConfiguration configuration) : IAuthenticationService
 {
+    static private Dictionary<string, string> userRefreshTokenPairs = new Dictionary<string, string>();
     public async Task<(string accessToken, string refreshToken)> Login(string username, string password)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
@@ -28,6 +30,7 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
         }
 
         var refreshToken = tokenGenerator.GenerateRefreshToken(user);
+        userRefreshTokenPairs[username] = refreshToken;
 
         return (tokenGenerator.GenerateAccessToken(user), refreshToken);
     }
@@ -90,30 +93,32 @@ public class AuthenticationService(IAppUserRepository repository, IPasswordHashe
     }
     public async Task<string> RefreshToken(string username, string refreshToken)
     {
+        
         ArgumentException.ThrowIfNullOrEmpty(username);
         ArgumentException.ThrowIfNullOrEmpty(refreshToken);
 
         AppUser user = await GetUser(repository, username);
 
-        //onlineUsers.ToList().FirstOrDefault(u => u);
-        //if (refreshToken != userToken.Value)
-        //{
-        //    throw new InvalidOperationException("Invalid refresh token");
-        //}
+        if (!userRefreshTokenPairs.ContainsKey(username))
+            throw new Exception("user not found");
+
+        if (userRefreshTokenPairs[username] != refreshToken)
+            throw new Exception("Wrong refresh token");
 
         return tokenGenerator.GenerateAccessToken(user);
     }
-    
+
     public async Task Logout(string username)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
-
-        AppUser user = await GetUser(repository, username);
-
-        //if (user.UserName != userToken.Key)
-        //{
-        //    throw new InvalidOperationException("Logout failed");
-        //}
+        if (userRefreshTokenPairs.ContainsKey(username))
+        {
+            userRefreshTokenPairs.Remove(username);
+        }
+        else
+        {
+            throw new KeyNotFoundException("Username not found");
+        }
     }
 }
 

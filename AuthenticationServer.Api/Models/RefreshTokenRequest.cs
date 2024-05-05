@@ -9,6 +9,5 @@ namespace AuthenticationServer.Api.Models
 
         [Required]
         public string RefreshToken { get; set; } = null!;
-        public string OnlineUsers { get; set; } = null!;
     }
 }
